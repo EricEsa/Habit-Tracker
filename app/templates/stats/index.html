@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Statistiken · {% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4"><i class="bi bi-bar-chart-line"></i> Statistiken</h1>
+
+<div id="stats-empty" class="card shadow-sm d-none">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-bar-chart fs-1 text-primary"></i>
+    <p class="mt-3 mb-0 text-body-secondary">Sobald du Gewohnheiten abhakst, erscheinen hier deine Statistiken.</p>
+  </div>
+</div>
+
+<div id="stats-content" class="d-none">
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100"><div class="card-body">
+        <h2 class="h5 mb-3">Erledigungen pro Woche</h2>
+        <canvas id="chart-weekly" height="220"></canvas>
+      </div></div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100"><div class="card-body">
+        <h2 class="h5 mb-3">Verteilung nach Kategorie</h2>
+        <canvas id="chart-category" height="220"></canvas>
+      </div></div>
+    </div>
+    <div class="col-12">
+      <div class="card shadow-sm"><div class="card-body">
+        <h2 class="h5 mb-3">Erfolgsquote pro Gewohnheit (30 Tage)</h2>
+        <canvas id="chart-success"></canvas>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="h5 mb-0">Kalender-Heatmap</h2>
+        <select id="heatmap-select" class="form-select form-select-sm" style="width: auto" aria-label="Heatmap-Auswahl">
+          <option value="all">Alle Gewohnheiten</option>
+        </select>
+      </div>
+      <div id="heatmap" class="heatmap" role="img" aria-label="Kalender-Heatmap der Erledigungen"></div>
+      <div class="d-flex align-items-center gap-1 mt-2 small text-body-secondary">
+        Weniger
+        <span class="heatmap-cell" data-level="0"></span>
+        <span class="heatmap-cell" data-level="1"></span>
+        <span class="heatmap-cell" data-level="2"></span>
+        <span class="heatmap-cell" data-level="3"></span>
+        <span class="heatmap-cell" data-level="4"></span>
+        Mehr
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Meilensteine</h2>
+      <div id="milestones" class="d-flex flex-wrap gap-3"></div>
+      <p id="milestones-empty" class="text-body-secondary mb-0 d-none">Noch keine Meilensteine erreicht. Bleib dran!</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const MILESTONE_LABELS = { 7: "7 Tage", 30: "30 Tage", 100: "100 Tage" };
+
+  function ensureFetchJSON() {
+    return typeof fetchJSON === "function" ? fetchJSON : (url) => fetch(url).then((r) => r.json());
+  }
+
+  function renderWeeklyChart(labels, counts) {
+    new Chart(document.getElementById("chart-weekly"), {
+      type: "bar",
+      data: { labels, datasets: [{ label: "Erledigungen", data: counts, backgroundColor: "#4f46e5" }] },
+      options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } },
+    });
+  }
+
+  function renderCategoryChart(labels, counts) {
+    const colors = ["#4f46e5", "#7c3aed", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6"];
+    new Chart(document.getElementById("chart-category"), {
+      type: "doughnut",
+      data: { labels, datasets: [{ data: counts, backgroundColor: colors }] },
+    });
+  }
+
+  function renderSuccessChart(items) {
+    new Chart(document.getElementById("chart-success"), {
+      type: "bar",
+      data: {
+        labels: items.map((i) => i.title),
+        datasets: [{ label: "Erfolgsquote (%)", data: items.map((i) => i.rate), backgroundColor: "#0ea5e9" }],
+      },
+      options: {
+        indexAxis: "y",
+        scales: { x: { beginAtZero: true, max: 100 } },
+        plugins: { legend: { display: false } },
+      },
+    });
+  }
+
+  function renderHeatmap(dates, start, today) {
+    const container = document.getElementById("heatmap");
+    container.innerHTML = "";
+    const set = new Set(dates);
+
+    const startDate = new Date(start);
+    const monday = new Date(startDate);
+    monday.setDate(startDate.getDate() - ((startDate.getDay() + 6) % 7));
+
+    const grid = document.createElement("div");
+    grid.className = "heatmap-grid";
+
+    for (let week = 0; week < 27; week++) {
+      const column = document.createElement("div");
+      column.className = "heatmap-week";
+      for (let day = 0; day < 7; day++) {
+        const cellDate = new Date(monday);
+        cellDate.setDate(monday.getDate() + week * 7 + day);
+        const iso = cellDate.toISOString().slice(0, 10);
+        const cell = document.createElement("span");
+        cell.className = "heatmap-cell";
+        if (iso > today) {
+          cell.classList.add("heatmap-future");
+        } else if (set.has(iso)) {
+          cell.dataset.level = "3";
+        } else {
+          cell.dataset.level = "0";
+        }
+        cell.title = iso;
+        column.appendChild(cell);
+      }
+      grid.appendChild(column);
+    }
+    container.appendChild(grid);
+  }
+
+  function renderMilestones(items) {
+    const wrap = document.getElementById("milestones");
+    const empty = document.getElementById("milestones-empty");
+    wrap.innerHTML = "";
+    if (!items.length) {
+      empty.classList.remove("d-none");
+      return;
+    }
+    empty.classList.add("d-none");
+    items.forEach((item) => {
+      item.milestones.forEach((m) => {
+        const badge = document.createElement("span");
+        badge.className = "badge text-bg-warning text-dark fs-6 py-2 px-3";
+        badge.innerHTML = `<i class="bi bi-trophy"></i> ${item.title}: ${MILESTONE_LABELS[m] || m + " Tage"}`;
+        wrap.appendChild(badge);
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const fetchJSONFn = ensureFetchJSON();
+    let data;
+    try {
+      data = await fetchJSONFn("{{ url_for('api.stats_overview') }}");
+    } catch (error) {
+      document.getElementById("stats-empty").classList.remove("d-none");
+      return;
+    }
+
+    if (!data.habits.length) {
+      document.getElementById("stats-empty").classList.remove("d-none");
+      return;
+    }
+    document.getElementById("stats-content").classList.remove("d-none");
+
+    renderWeeklyChart(data.weekly_labels, data.weekly_counts);
+    renderCategoryChart(data.category_labels, data.category_counts);
+    renderSuccessChart(data.success_rates);
+    renderMilestones(data.milestones);
+
+    const select = document.getElementById("heatmap-select");
+    data.habits.forEach((habit) => {
+      const option = document.createElement("option");
+      option.value = habit.id;
+      option.textContent = habit.title;
+      select.appendChild(option);
+    });
+
+    function updateHeatmap() {
+      const dates = select.value === "all" ? data.heatmap_combined : data.heatmap_by_habit[select.value] || [];
+      renderHeatmap(dates, data.heatmap_start, data.heatmap_today);
+    }
+    select.addEventListener("change", updateHeatmap);
+    updateHeatmap();
+  });
+})();
+</script>
+{% endblock %}

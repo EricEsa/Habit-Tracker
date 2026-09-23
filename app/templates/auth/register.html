@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, csrf_field %}
+{% block title %}Registrieren · {% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h3 mb-4"><i class="bi bi-person-plus"></i> Konto erstellen</h1>
+        <form method="post" novalidate>
+          {{ csrf_field() }}
+          {{ render_field(form.username, autofocus=true, autocomplete="username") }}
+          {{ render_field(form.email, autocomplete="email") }}
+          {{ render_field(form.password, autocomplete="new-password", help="Mindestens 8 Zeichen, mit Buchstabe und Ziffer.") }}
+          {{ render_field(form.password2, autocomplete="new-password") }}
+          <div class="d-grid">{{ form.submit(class_="btn btn-primary btn-lg") }}</div>
+        </form>
+        <p class="text-center text-body-secondary mt-4 mb-0">
+          Schon ein Konto? <a href="{{ url_for('auth.login') }}">Jetzt anmelden</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

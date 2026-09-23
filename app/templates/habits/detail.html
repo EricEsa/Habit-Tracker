@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, render_checkbox, csrf_field %}
+{% block title %}{{ habit.title }} · {% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
+  <div>
+    <h1 class="h3 mb-1">{{ habit.title }}</h1>
+    <div class="small text-body-secondary">
+      {% if habit.category %}
+        <span class="badge" style="background-color: {{ habit.category.color }}">
+          <i class="bi {{ habit.category.icon }}"></i> {{ habit.category.name }}
+        </span>
+      {% endif %}
+      <i class="bi bi-arrow-repeat"></i> {{ FREQUENCY_LABELS[habit.frequency] }}
+      {% if habit.frequency == 'weekdays' %}
+        ({% for day in habit.weekday_list %}{{ WEEKDAY_NAMES[day][:2] }}{% if not loop.last %}, {% endif %}{% endfor %})
+      {% elif habit.frequency == 'weekly' %}
+        ({{ habit.target_per_period }}&times; pro Woche)
+      {% endif %}
+    </div>
+    {% if habit.description %}<p class="mt-2 mb-0">{{ habit.description }}</p>{% endif %}
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('habits.index') }}">Zurück</a>
+    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('habits.edit', habit_id=habit.id) }}">
+      <i class="bi bi-pencil"></i> Bearbeiten
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card shadow-sm h-100"><div class="card-body text-center">
+      <div class="small text-body-secondary">Aktuelle Serie</div>
+      <div class="display-6 fw-bold"><i class="bi bi-fire text-warning"></i> {{ stats.current }}</div>
+      <div class="small text-body-secondary">{{ stats.unit }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card shadow-sm h-100"><div class="card-body text-center">
+      <div class="small text-body-secondary">Längste Serie</div>
+      <div class="display-6 fw-bold"><i class="bi bi-trophy text-primary"></i> {{ stats.longest }}</div>
+      <div class="small text-body-secondary">{{ stats.unit }}</div>
+    </div></div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm h-100"><div class="card-body">
+      <div class="small text-body-secondary mb-2">Erfolgsquote</div>
+      {% for days, rate in stats.rates.items() %}
+        {% set percent = (rate * 100)|round|int if rate is not none else 0 %}
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="small" style="width: 5rem">{{ days }} Tage</span>
+          <div class="progress flex-grow-1" role="progressbar" aria-label="Erfolgsquote {{ days }} Tage"
+               aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar" style="width: {{ percent }}%"></div>
+          </div>
+          <span class="small text-end" style="width: 3rem">{% if rate is none %}–{% else %}{{ percent }} %{% endif %}</span>
+        </div>
+      {% endfor %}
+      <div class="small text-body-secondary mt-2">Insgesamt {{ stats.total }} Mal erledigt</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body pb-0"><h2 class="h5 mb-3">Letzte 14 Tage</h2></div>
+      <div class="list-group list-group-flush rounded-bottom">
+        {% for day in days %}
+          {% set log = logs.get(day) %}
+          <label class="list-group-item d-flex align-items-center gap-3">
+            <input class="form-check-input habit-check" type="checkbox"
+                   data-url="{{ url_for('api.log_habit', habit_id=habit.id) }}"
+                   data-habit-id="{{ habit.id }}"
+                   data-date="{{ day.isoformat() }}"
+                   data-reload="true"
+                   {% if log and log.completed %}checked{% endif %}>
+            <span class="flex-grow-1">
+              {{ WEEKDAY_NAMES[day.weekday()][:2] }}, {{ day.strftime('%d.%m.') }}
+              {% if day == today %}<span class="badge text-bg-primary">Heute</span>{% endif %}
+            </span>
+            {% if log and log.note %}<i class="bi bi-chat-left-text text-body-secondary" title="{{ log.note }}"></i>{% endif %}
+          </label>
+        {% else %}
+          <div class="list-group-item text-body-secondary">In den letzten 14 Tagen war nichts fällig.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Für einen anderen Tag eintragen</h2>
+        <form method="post" action="{{ url_for('habits.add_log', habit_id=habit.id) }}" novalidate>
+          {{ csrf_field() }}
+          {{ render_field(log_form.date, min=habit.start_date.isoformat(), max=today.isoformat()) }}
+          {{ render_checkbox(log_form.completed) }}
+          {{ render_field(log_form.note, rows=2, maxlength=500) }}
+          {{ log_form.submit(class_="btn btn-primary") }}
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Notizen</h2>
+        {% for log in notes %}
+          <div class="mb-2">
+            <strong>{{ log.date.strftime('%d.%m.%Y') }}</strong>
+            {% if not log.completed %}<span class="badge text-bg-secondary">nicht erledigt</span>{% endif %}
+            <div class="text-body-secondary">{{ log.note }}</div>
+          </div>
+        {% else %}
+          <p class="text-body-secondary mb-0">Noch keine Notizen.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

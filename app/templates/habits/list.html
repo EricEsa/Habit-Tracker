@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Gewohnheiten · {% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <h1 class="h3 mb-0"><i class="bi bi-list-check"></i> Meine Gewohnheiten</h1>
+  <a class="btn btn-primary" href="{{ url_for('habits.create') }}"><i class="bi bi-plus-lg"></i> Neue Gewohnheit</a>
+</div>
+
+<form id="filter-form" class="card shadow-sm mb-4" method="get" action="{{ url_for('habits.index') }}"
+      data-search-url="{{ url_for('api.search') }}">
+  <div class="card-body">
+    <div class="row g-2">
+      <div class="col-12">
+        <input type="search" class="form-control" id="q" name="q" value="{{ filters.q }}"
+               placeholder="Suche in Titel und Beschreibung …" aria-label="Suche" autocomplete="off">
+      </div>
+
+      <div class="col-6 col-lg-4">
+        <select class="form-select" name="category" aria-label="Kategorie">
+          <option value="">Alle Kategorien</option>
+          <option value="none" {% if filters.category == 'none' %}selected{% endif %}>Ohne Kategorie</option>
+          {% for category in categories %}
+            <option value="{{ category.id }}" {% if filters.category == category.id|string %}selected{% endif %}>{{ category.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-lg-4">
+        <select class="form-select" name="tag" aria-label="Tag">
+          <option value="">Alle Tags</option>
+          {% for tag in tags %}
+            <option value="{{ tag.id }}" {% if filters.tag == tag.id %}selected{% endif %}>#{{ tag.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-lg-4">
+        <select class="form-select" name="frequency" aria-label="Häufigkeit">
+          <option value="">Jede Häufigkeit</option>
+          {% for value, label in FREQUENCY_LABELS.items() %}
+            <option value="{{ value }}" {% if filters.frequency == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-lg-4">
+        <select class="form-select" name="status" aria-label="Status">
+          {% for value, label in status_options.items() %}
+            <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-lg-4">
+        <select class="form-select" name="done" aria-label="Heute">
+          <option value="">Heute: alle</option>
+          {% for value, label in done_options.items() %}
+            <option value="{{ value }}" {% if filters.done == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-lg-4">
+        <select class="form-select" name="sort" aria-label="Sortierung">
+          {% for value, label in sort_options.items() %}
+            <option value="{{ value }}" {% if filters.sort == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel"></i> Filtern</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('habits.index') }}">Zurücksetzen</a>
+    </div>
+  </div>
+</form>
+
+<div id="results">
+  {% include "habits/_results.html" %}
+</div>
+{% endblock %}

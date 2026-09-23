@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Serverfehler · {% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <div class="display-1 fw-bold text-danger">500</div>
+  <h1 class="h3 mb-3">Da ist etwas schiefgelaufen</h1>
+  <p class="text-body-secondary mb-4">Auf dem Server ist ein unerwarteter Fehler aufgetreten. Bitte versuche es später erneut.</p>
+  <a class="btn btn-primary" href="{{ url_for('main.index') }}"><i class="bi bi-house"></i> Zur Startseite</a>
+</div>
+{% endblock %}

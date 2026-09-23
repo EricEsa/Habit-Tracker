@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, render_select, csrf_field %}
+{% block title %}Kategorien · {% endblock %}
+{% block content %}
+<h1 class="h3 mb-4"><i class="bi bi-folder2"></i> Kategorien</h1>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="list-group list-group-flush rounded">
+        {% for category in categories %}
+          <div class="list-group-item d-flex align-items-center gap-3 {% if editing and editing.id == category.id %}bg-body-tertiary{% endif %}">
+            <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white flex-shrink-0"
+                  style="width: 2.5rem; height: 2.5rem; background-color: {{ category.color }}">
+              <i class="bi {{ category.icon }}"></i>
+            </span>
+            <div class="flex-grow-1">
+              <div class="fw-semibold">{{ category.name }}</div>
+              <div class="small text-body-secondary">{{ category.habits|length }} Gewohnheit(en)</div>
+            </div>
+            <a class="btn btn-outline-secondary btn-sm" aria-label="Bearbeiten"
+               href="{{ url_for('habits.edit_category', category_id=category.id) }}"><i class="bi bi-pencil"></i></a>
+            <button type="button" class="btn btn-outline-danger btn-sm" aria-label="Löschen"
+                    data-confirm-action="{{ url_for('habits.delete_category', category_id=category.id) }}"
+                    data-confirm-text="Die Kategorie „{{ category.name }}“ wird gelöscht. Die Gewohnheiten darin bleiben erhalten.">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        {% else %}
+          <div class="list-group-item text-center text-body-secondary py-4">Du hast noch keine Kategorien.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 mb-3">{{ 'Kategorie bearbeiten' if editing else 'Neue Kategorie' }}</h2>
+        <form method="post" novalidate>
+          {{ csrf_field() }}
+          {{ render_field(form.name, maxlength=50) }}
+          {{ render_field(form.color) }}
+          {{ render_select(form.icon) }}
+          <div class="d-flex gap-2">
+            {{ form.submit(class_="btn btn-primary") }}
+            {% if editing %}<a class="btn btn-outline-secondary" href="{{ url_for('habits.categories') }}">Abbrechen</a>{% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, render_select, render_checkbox_group, csrf_field %}
+{% block title %}{{ 'Gewohnheit bearbeiten' if habit else 'Neue Gewohnheit' }} · {% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h3 mb-4">
+          {% if habit %}<i class="bi bi-pencil"></i> Gewohnheit bearbeiten{% else %}<i class="bi bi-plus-circle"></i> Neue Gewohnheit{% endif %}
+        </h1>
+        <form method="post" novalidate>
+          {{ csrf_field() }}
+          {{ render_field(form.title, autofocus=true, maxlength=100) }}
+          {{ render_field(form.description, rows=3) }}
+
+          <div class="row">
+            <div class="col-md-6">{{ render_select(form.category_id) }}</div>
+            <div class="col-md-6">{{ render_field(form.start_date) }}</div>
+          </div>
+
+          {{ render_select(form.frequency) }}
+
+          <div id="weekdays-group">
+            {{ render_checkbox_group(form.weekdays) }}
+          </div>
+
+          <div id="target-group">
+            {{ render_field(form.target_per_period, min=1, max=7, help="Wie oft pro Woche willst du die Gewohnheit ausführen?") }}
+          </div>
+
+          {{ render_checkbox_group(form.tags, empty_text="Du hast noch keine Tags. Lege sie unter „Tags“ an.") }}
+
+          <div class="d-flex gap-2">
+            {{ form.submit(class_="btn btn-primary") }}
+            <a class="btn btn-outline-secondary" href="{{ url_for('habits.index') }}">Abbrechen</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const frequency = document.getElementById("frequency");
+  const weekdaysGroup = document.getElementById("weekdays-group");
+  const targetGroup = document.getElementById("target-group");
+
+  function toggleGroups() {
+    weekdaysGroup.classList.toggle("d-none", frequency.value !== "weekdays");
+    targetGroup.classList.toggle("d-none", frequency.value !== "weekly");
+  }
+
+  frequency.addEventListener("change", toggleGroups);
+  toggleGroups();
+</script>
+{% endblock %}

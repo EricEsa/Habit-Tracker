@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, render_select, csrf_field %}
+{% block title %}Profil · {% endblock %}
+{% block content %}
+<h1 class="h3 mb-4"><i class="bi bi-person-circle"></i> Mein Profil</h1>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Kontodaten</h2>
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Benutzername</dt><dd class="col-sm-7">{{ current_user.username }}</dd>
+          <dt class="col-sm-5">E-Mail</dt><dd class="col-sm-7">{{ current_user.email }}</dd>
+          <dt class="col-sm-5">Mitglied seit</dt><dd class="col-sm-7">{{ current_user.created_at.strftime('%d.%m.%Y') }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-palette"></i> Darstellung</h2>
+        <form method="post" action="{{ url_for('auth.set_theme') }}" novalidate>
+          {{ csrf_field() }}
+          {{ render_select(theme_form.theme) }}
+          {{ theme_form.submit(class_="btn btn-primary") }}
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-envelope"></i> E-Mail ändern</h2>
+        <form method="post" action="{{ url_for('auth.change_email') }}" novalidate>
+          {{ csrf_field() }}
+          {{ render_field(email_form.new_email, autocomplete="email") }}
+          {{ render_field(email_form.email_password, autocomplete="current-password") }}
+          {{ email_form.submit(class_="btn btn-primary") }}
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 mb-3"><i class="bi bi-key"></i> Passwort ändern</h2>
+        <form method="post" action="{{ url_for('auth.change_password') }}" novalidate>
+          {{ csrf_field() }}
+          {{ render_field(password_form.current_password, autocomplete="current-password") }}
+          {{ render_field(password_form.new_password, autocomplete="new-password", help="Mindestens 8 Zeichen, mit Buchstabe und Ziffer.") }}
+          {{ render_field(password_form.confirm_password, autocomplete="new-password") }}
+          {{ password_form.submit(class_="btn btn-primary") }}
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card border border-danger-subtle shadow-sm">
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <h2 class="h5 text-danger mb-1"><i class="bi bi-exclamation-triangle"></i> Gefahrenzone</h2>
+          <p class="mb-0 text-body-secondary">Beim Löschen werden alle deine Gewohnheiten, Einträge, Kategorien und Tags entfernt.</p>
+        </div>
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+          <i class="bi bi-trash"></i> Konto löschen
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('auth.delete_account') }}" novalidate>
+        {{ csrf_field() }}
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="deleteAccountLabel">Konto wirklich löschen?</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+        </div>
+        <div class="modal-body">
+          <p>Das kann <strong>nicht rückgängig</strong> gemacht werden. Bitte bestätige mit deinem Passwort.</p>
+          {{ render_field(delete_form.delete_password, autocomplete="current-password") }}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+          {{ delete_form.submit(class_="btn btn-danger") }}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if delete_form.errors %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => new bootstrap.Modal("#deleteAccountModal").show());
+</script>
+{% endif %}
+{% endblock %}
